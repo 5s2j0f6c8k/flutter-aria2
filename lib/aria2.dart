@@ -13,50 +13,22 @@ import 'aria2_message.dart';
 
 class Aria2 {
   final Aria2Config aria2config;
-  Process _process;
   Aria2JsonRpc aria2jsonRpc;
 
   Aria2(this.aria2config);
 
   createAria2() async {
-    Directory fileDir = await getApplicationDocumentsDirectory();
-    File file = new File(pathUtils.join(fileDir.path, "aria2c"));
-    bool isExists = await file.exists();
-    if (!isExists) {
-      await file.delete();
-    }
-    File aria2File =
-        File.fromRawPath(Uint8List.fromList(aria2config.aria2Path.codeUnits));
-
-    if (!(await aria2File.exists())) {
-      Aria2EventBus.eventBus.fire(
-          new Aria2Message(Aria2Code.ERROR, "not found Aria2 file", null));
-      return;
-    }
-
-    await file.writeAsBytes(await aria2File.readAsBytes());
-
-    await Process.run('chmod', ['777', aria2File.path]);
+    await aria2config.init();
+    ProcessResult processResult = await Process.run(
+        "chmod", ["777", this.aria2config.aria2AppPath]);
+    print(processResult.stdout);
+    await runAria2();
   }
 
   runAria2() {
-    Process.run(aria2config.aria2Path,
-        ["--conf-path=" + aria2config.aria2ConfigPath]).then((process) {
-      process.stdout.transform(utf8.decoder).listen((data) {
-        Aria2EventBus.eventBus
-            .fire(new Aria2Message(Aria2Code.INFO, data, null));
-      });
-    });
-  }
-
-  stopAria2() {
-    return Process.killPid(_process.pid);
-  }
-
-  restart() {
-    if (stopAria2()) {
-      runAria2();
-    }
+    print(aria2config.aria2AppPath);
+    Process.run(aria2config.aria2AppPath,
+        ["--conf-path=" + aria2config.aria2AppConfigPath]);
   }
 
   reConnectRpc() {

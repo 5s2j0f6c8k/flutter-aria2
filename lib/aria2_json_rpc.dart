@@ -1,23 +1,27 @@
 import "package:json_rpc_2/json_rpc_2.dart" as json_rpc;
 import 'package:json_rpc_2/json_rpc_2.dart';
-import "package:web_socket_channel/html.dart";
+import "package:web_socket_channel/io.dart";
 
 import 'aria2_code.dart';
 import 'aria2_event_bus.dart';
 import 'aria2_message.dart';
 
 class Aria2JsonRpc {
-  HtmlWebSocketChannel _socket;
+  IOWebSocketChannel _socket;
   Client _client;
 
   reConnect(String url, String secret) async {
+
+    print("reReconnect:" + url);
+
     if (_client != null) {
       await _client.close();
       await _socket.sink.close();
     }
-    _socket = HtmlWebSocketChannel.connect('ws://localhost:4321');
+    _socket = IOWebSocketChannel.connect(url);
     _client = new json_rpc.Client(_socket.cast<String>());
     _client.listen().catchError((error) {
+      print(error.toString());
       Aria2EventBus.eventBus
           .fire(new Aria2Message(Aria2Code.ERROR, error.toString(), null));
     });
